@@ -170,6 +170,10 @@ def _format_live(sample: Dict[str, Any]) -> str:
         lines.append(f"GPU {gpu.get('util_percent')}%  VRAM {used:.0f}/{total:.0f} MB ({pct:.0f}%)")
         if gpu.get("temperature_c") is not None:
             lines.append(f"Temp {gpu['temperature_c']:.0f}C  Power {gpu.get('power_w') or 0:.0f}W")
+    else:
+        # Say so explicitly: silently omitting the GPU leaves a user on a machine
+        # without an NVIDIA driver unsure whether monitoring is broken.
+        lines.append("GPU: not available (no NVIDIA driver detected)")
     lines.append(f"CPU {sample.get('cpu_percent')}%  RAM {sample.get('ram_percent')}%")
     read = sample.get("disk_read_mb_s")
     write = sample.get("disk_write_mb_s")
