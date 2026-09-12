@@ -26,7 +26,7 @@ Repository = "https://github.com/twrsm666/comfyui-sysmon"
 Issues = "https://github.com/twrsm666/comfyui-sysmon/issues"
 
 [tool.comfy]
-PublisherId = "<your-publisher-id>"
+PublisherId = "twrsm666"
 DisplayName = "System Monitor (GPU/VRAM/CPU/RAM/Disk)"
 Icon = ""
 # The web extension is served under the folder name by default. Setting
