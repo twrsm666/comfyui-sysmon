@@ -1,0 +1,630 @@
+/* ComfyUI System Monitor - panel styles.
+   All selectors are namespaced under #sysmon-panel to avoid clashing with the
+   host UI or other custom nodes. */
+
+#sysmon-panel,
+#sysmon-panel * {
+  box-sizing: border-box;
+}
+
+#sysmon-panel {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  width: 420px;
+  max-height: min(78vh, 780px);
+  display: flex;
+  flex-direction: column;
+  /* Above the frontend's own overlays: body bars 1000/1001, toasts 10000. */
+  z-index: 10001;
+  font-family: ui-sans-serif, system-ui, "Segoe UI", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  color: var(--input-text, #e6e6e6);
+  background: var(--comfy-menu-bg, #202020);
+  border: 1px solid var(--border-color, #4e4e4e);
+  border-radius: 10px;
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+  backdrop-filter: blur(6px);
+}
+
+#sysmon-panel.is-collapsed {
+  max-height: none;
+  width: 260px;
+}
+
+#sysmon-panel.is-hidden {
+  display: none;
+}
+
+/* --- header ------------------------------------------------------------ */
+.sysmon-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+  border-bottom: 1px solid var(--border-color, #4e4e4e);
+  cursor: move;
+  user-select: none;
+  flex: 0 0 auto;
+}
+
+.sysmon-title {
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.sysmon-header-spacer {
+  flex: 1 1 auto;
+}
+
+.sysmon-header .sysmon-chip {
+  font-variant-numeric: tabular-nums;
+}
+
+.sysmon-icon-btn {
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  padding: 4px 6px;
+  border-radius: 5px;
+  opacity: 0.75;
+}
+
+.sysmon-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  opacity: 1;
+}
+
+/* --- tabs -------------------------------------------------------------- */
+.sysmon-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 5px 6px 0;
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--border-color, #4e4e4e);
+}
+
+.sysmon-tab {
+  flex: 1 1 auto;
+  padding: 6px 8px;
+  text-align: center;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: inherit;
+  opacity: 0.6;
+  border-radius: 6px 6px 0 0;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.sysmon-tab:hover {
+  opacity: 0.9;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.sysmon-tab.is-active {
+  opacity: 1;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.09);
+  box-shadow: inset 0 -2px 0 var(--p-primary-color, #3b82f6);
+}
+
+.sysmon-tab .sysmon-badge {
+  display: inline-block;
+  min-width: 15px;
+  margin-left: 4px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: #b91c1c;
+  color: #fff;
+  font-size: 10px;
+  line-height: 15px;
+  font-weight: 700;
+}
+
+.sysmon-tab .sysmon-badge:empty {
+  display: none;
+}
+
+/* --- body -------------------------------------------------------------- */
+.sysmon-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 9px 10px 12px;
+  scrollbar-width: thin;
+}
+
+.sysmon-section {
+  margin-bottom: 12px;
+}
+
+.sysmon-section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  opacity: 0.6;
+  margin-bottom: 6px;
+}
+
+.sysmon-section-title::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.2;
+}
+
+.sysmon-empty {
+  opacity: 0.5;
+  padding: 10px 2px;
+  text-align: center;
+  font-style: italic;
+}
+
+/* --- metrics ----------------------------------------------------------- */
+.sysmon-metric {
+  margin-bottom: 8px;
+}
+
+.sysmon-metric-head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+
+.sysmon-metric-label {
+  opacity: 0.85;
+}
+
+.sysmon-metric-value {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.sysmon-metric-sub {
+  opacity: 0.5;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sysmon-bar {
+  position: relative;
+  height: 7px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.11);
+  overflow: hidden;
+}
+
+.sysmon-bar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  border-radius: 4px;
+  background: var(--p-primary-color, #3b82f6);
+  transition: width 0.35s ease, background-color 0.35s ease;
+}
+
+.sysmon-bar-fill.is-warn {
+  background: #d97706;
+}
+
+.sysmon-bar-fill.is-crit {
+  background: #dc2626;
+}
+
+.sysmon-dual {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 12px;
+}
+
+.sysmon-kv {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 0;
+  opacity: 0.85;
+}
+
+.sysmon-kv span:last-child {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.95;
+}
+
+/* --- chart ------------------------------------------------------------- */
+.sysmon-chart-wrap {
+  position: relative;
+  height: 108px;
+  margin: 4px 0 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+}
+
+.sysmon-chart-wrap canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.sysmon-chart-legend {
+  position: absolute;
+  top: 4px;
+  left: 7px;
+  display: flex;
+  gap: 9px;
+  font-size: 10px;
+  pointer-events: none;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.sysmon-chart-legend i {
+  display: inline-block;
+  width: 8px;
+  height: 2px;
+  margin-right: 3px;
+  vertical-align: middle;
+}
+
+/* --- run history ------------------------------------------------------- */
+.sysmon-run {
+  border: 1px solid var(--border-color, #4e4e4e);
+  border-radius: 7px;
+  margin-bottom: 7px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.sysmon-run-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 8px;
+  cursor: pointer;
+}
+
+.sysmon-run-head:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.sysmon-status {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #6b7280;
+}
+
+.sysmon-status.is-success { background: #16a34a; }
+.sysmon-status.is-error { background: #dc2626; }
+.sysmon-status.is-running {
+  background: #2563eb;
+  animation: sysmon-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes sysmon-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+.sysmon-run-title {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sysmon-run-meta {
+  flex: 0 0 auto;
+  opacity: 0.65;
+  font-variant-numeric: tabular-nums;
+}
+
+.sysmon-run-body {
+  display: none;
+  padding: 6px 8px 8px;
+  border-top: 1px solid var(--border-color, #4e4e4e);
+}
+
+.sysmon-run.is-open .sysmon-run-body {
+  display: block;
+}
+
+.sysmon-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.sysmon-table th {
+  text-align: left;
+  font-weight: 600;
+  opacity: 0.55;
+  padding: 2px 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.13);
+  white-space: nowrap;
+}
+
+.sysmon-table td {
+  padding: 2px 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-variant-numeric: tabular-nums;
+}
+
+.sysmon-table td.sysmon-node-name {
+  font-variant-numeric: normal;
+  max-width: 132px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sysmon-table tr.is-peak td {
+  color: #fbbf24;
+}
+
+.sysmon-node-type {
+  display: block;
+  opacity: 0.45;
+  font-size: 10px;
+}
+
+/* --- errors ------------------------------------------------------------ */
+.sysmon-error {
+  border-left: 3px solid #dc2626;
+  background: rgba(220, 38, 38, 0.09);
+  border-radius: 0 6px 6px 0;
+  padding: 7px 9px;
+  margin-bottom: 8px;
+}
+
+.sysmon-error-head {
+  font-weight: 600;
+  margin-bottom: 3px;
+  word-break: break-word;
+}
+
+.sysmon-error-msg {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 132px;
+  overflow-y: auto;
+  opacity: 0.9;
+  margin: 4px 0;
+  padding: 5px 6px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+
+.sysmon-when {
+  opacity: 0.5;
+  font-size: 11px;
+}
+
+/* --- buttons / inputs -------------------------------------------------- */
+.sysmon-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.sysmon-btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #4e4e4e);
+  background: rgba(255, 255, 255, 0.07);
+  color: inherit;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.sysmon-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.sysmon-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.sysmon-btn.is-primary {
+  background: var(--p-primary-color, #3b82f6);
+  border-color: transparent;
+  color: #fff;
+  font-weight: 600;
+}
+
+.sysmon-field {
+  margin-bottom: 8px;
+}
+
+.sysmon-field label {
+  display: block;
+  margin-bottom: 3px;
+  opacity: 0.72;
+}
+
+.sysmon-field input,
+.sysmon-field select,
+.sysmon-field textarea {
+  width: 100%;
+  padding: 5px 7px;
+  border-radius: 5px;
+  border: 1px solid var(--border-color, #4e4e4e);
+  background: var(--comfy-input-bg, #161616);
+  color: var(--input-text, #e6e6e6);
+  font-size: 12px;
+  font-family: inherit;
+}
+
+.sysmon-field input[type="checkbox"] {
+  width: auto;
+}
+
+.sysmon-check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 7px;
+}
+
+.sysmon-check input {
+  flex: 0 0 auto;
+}
+
+.sysmon-check label {
+  margin: 0;
+}
+
+.sysmon-hint {
+  opacity: 0.52;
+  font-size: 11px;
+  line-height: 1.45;
+  margin-top: 3px;
+}
+
+/* --- AI output --------------------------------------------------------- */
+.sysmon-ai {
+  margin-top: 8px;
+  padding: 9px 10px;
+  border-radius: 7px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  line-height: 1.55;
+  word-break: break-word;
+}
+
+.sysmon-ai h2 {
+  font-size: 12px;
+  margin: 9px 0 4px;
+  color: #93c5fd;
+}
+
+.sysmon-ai h2:first-child {
+  margin-top: 0;
+}
+
+.sysmon-ai ul,
+.sysmon-ai ol {
+  margin: 4px 0 4px 16px;
+  padding: 0;
+}
+
+.sysmon-ai li {
+  margin-bottom: 2px;
+}
+
+.sysmon-ai code {
+  font-family: ui-monospace, Consolas, monospace;
+  background: rgba(0, 0, 0, 0.34);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.sysmon-ai pre {
+  background: rgba(0, 0, 0, 0.34);
+  padding: 6px 8px;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin: 5px 0;
+}
+
+.sysmon-ai-meta {
+  opacity: 0.55;
+  font-size: 10px;
+  margin-top: 7px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding-top: 5px;
+}
+
+.sysmon-spinner {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: sysmon-spin 0.8s linear infinite;
+  vertical-align: -1px;
+  margin-right: 5px;
+}
+
+@keyframes sysmon-spin {
+  to { transform: rotate(360deg); }
+}
+
+.sysmon-toast {
+  margin-top: 7px;
+  padding: 6px 9px;
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.sysmon-toast.is-ok {
+  background: rgba(22, 163, 74, 0.16);
+  border: 1px solid rgba(22, 163, 74, 0.45);
+}
+
+.sysmon-toast.is-err {
+  background: rgba(220, 38, 38, 0.16);
+  border: 1px solid rgba(220, 38, 38, 0.45);
+}
+
+/* --- floating launcher (only shown while the panel is hidden) ---------- */
+#sysmon-launcher {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 10001;
+  padding: 7px 11px;
+  border-radius: 18px;
+  border: 1px solid var(--border-color, #4e4e4e);
+  background: var(--comfy-menu-bg, #202020);
+  color: var(--input-text, #e6e6e6);
+  cursor: pointer;
+  font-family: ui-sans-serif, system-ui, "Segoe UI", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  display: none;
+  align-items: center;
+  gap: 7px;
+}
+
+#sysmon-launcher.is-visible {
+  display: flex;
+}
+
+#sysmon-launcher:hover {
+  background: var(--comfy-menu-bg, #2c2c2c);
+}
+
+.sysmon-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #16a34a;
+  flex: 0 0 auto;
+}
+
+.sysmon-dot.is-warn { background: #d97706; }
+.sysmon-dot.is-crit { background: #dc2626; }

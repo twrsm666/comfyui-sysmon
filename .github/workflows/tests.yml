@@ -1,0 +1,60 @@
+name: tests
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  backend:
+    name: backend tests (python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # The test suite is written to degrade gracefully: hardware sampling
+      # reports "unavailable" on a GPU-less runner instead of failing, so the
+      # pure-logic assertions still run everywhere. aiohttp is needed by the
+      # HTTP API tests and ships with ComfyUI itself.
+      - name: Install test dependencies
+        run: python -m pip install --upgrade pip psutil aiohttp
+
+      - name: Run backend tests
+        run: python tests/run_tests.py
+
+      - name: Run HTTP API tests
+        run: python tests/api_tests.py
+
+      - name: Run node tests
+        run: python tests/node_tests.py
+
+  web:
+    name: web static checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Check web modules
+        run: node tests/check_web.mjs
+
+  syntax:
+    name: python syntax check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Compile all sources
+        run: python -m compileall -q sysmon __init__.py tests

@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "comfyui-sysmon"
+version = "1.0.0"
+description = "Live GPU/VRAM/CPU/RAM/disk monitoring for ComfyUI with per-node peak attribution, run/error logging, and optional AI diagnosis."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "ComfyUI System Monitor contributors" }]
+keywords = ["comfyui", "monitoring", "metrics", "gpu", "vram", "performance", "nvidia"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Topic :: System :: Monitoring",
+]
+# No install_requires on purpose: psutil ships with ComfyUI, and everything else
+# is standard library. The pack must never force a dependency change on users.
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/<your-name>/comfyui-sysmon"
+Repository = "https://github.com/<your-name>/comfyui-sysmon"
+Issues = "https://github.com/<your-name>/comfyui-sysmon/issues"
+
+[tool.comfy]
+PublisherId = "<your-publisher-id>"
+DisplayName = "System Monitor (GPU/VRAM/CPU/RAM/Disk)"
+Icon = ""
+# The web extension is served under the folder name by default. Setting
+# `web = "web"` here would serve it under the pyproject project name instead;
+# panel.js derives its own URL from import.meta.url, so either works.
+# web = "web"
+
+[tool.setuptools]
+packages = ["sysmon"]
+
+[tool.setuptools.package-data]
+"*" = ["*.json", "*.js", "*.css", "*.md"]

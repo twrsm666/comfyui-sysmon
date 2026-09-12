@@ -1,0 +1,32 @@
+# Keep line endings stable across platforms: LF in the repository, and let git
+# normalise on checkout. Without this, committing from Windows rewrites every
+# text file with CRLF and produces noisy diffs.
+* text=auto eol=lf
+
+# Binary assets must not be touched.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pth binary
+*.safetensors binary
+*.woff binary
+*.woff2 binary
+
+# Explicitly mark these as text so they are always normalised.
+*.py   text eol=lf
+*.js   text eol=lf
+*.mjs  text eol=lf
+*.css  text eol=lf
+*.json text eol=lf
+*.md   text eol=lf
+*.toml text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+
+# Windows scripts keep CRLF so they behave nicely in Notepad and older hosts.
+*.ps1  text eol=crlf
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
