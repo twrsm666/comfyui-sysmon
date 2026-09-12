@@ -56,7 +56,7 @@ git commit -m "feat: ComfyUI system monitor with per-node peak attribution
 然后：
 
 ```powershell
-git remote add origin https://github.com/<你的用户名>/comfyui-sysmon.git
+git remote add origin https://github.com/twrsm666/comfyui-sysmon.git
 git branch -M main
 git push -u origin main
 ```
@@ -83,6 +83,6 @@ git grep -n -I -E 'sk-[A-Za-z0-9]{16,}' -- . ':!README.md'
 
 - **ComfyUI Registry**：填好 `pyproject.toml` 里的 `PublisherId` 后，
   用 `comfy node publish` 发布，用户即可通过 ComfyUI-Manager 安装。
-- **README 里的占位符**：把 `<your-name>` / `<your-publisher-id>` 换成实际值。
+- **README 里的占位符**：把 `twrsm666` / `<your-publisher-id>` 换成实际值。
 - 想让别人一眼看懂效果，建议把面板截图放到 `docs/panel.png`，
   并在 README 顶部引用（`.gitignore` 已允许 `docs/*.png` 被提交）。

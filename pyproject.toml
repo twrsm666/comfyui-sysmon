@@ -21,9 +21,9 @@ classifiers = [
 dependencies = []
 
 [project.urls]
-Homepage = "https://github.com/<your-name>/comfyui-sysmon"
-Repository = "https://github.com/<your-name>/comfyui-sysmon"
-Issues = "https://github.com/<your-name>/comfyui-sysmon/issues"
+Homepage = "https://github.com/twrsm666/comfyui-sysmon"
+Repository = "https://github.com/twrsm666/comfyui-sysmon"
+Issues = "https://github.com/twrsm666/comfyui-sysmon/issues"
 
 [tool.comfy]
 PublisherId = "<your-publisher-id>"

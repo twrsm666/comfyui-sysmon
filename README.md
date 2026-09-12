@@ -74,7 +74,7 @@ API Key 只保存在本地，界面上始终以掩码显示。
 
 ```bash
 cd ComfyUI/custom_nodes
-git clone https://github.com/<your-name>/comfyui-sysmon.git
+git clone https://github.com/twrsm666/comfyui-sysmon.git
 ```
 
 重启后右下角会出现悬浮面板。若没看到，请按 `F5` 强制刷新一次浏览器缓存。
@@ -302,7 +302,7 @@ comfyui-sysmon/
 .\scripts\publish.ps1
 
 # 检查通过后提交并推送
-.\scripts\publish.ps1 -RepoUrl https://github.com/<you>/comfyui-sysmon.git
+.\scripts\publish.ps1 -RepoUrl https://github.com/twrsm666/comfyui-sysmon.git
 
 # 或者让 GitHub CLI 直接建仓并推送
 .\scripts\publish.ps1 -UseGhCli
