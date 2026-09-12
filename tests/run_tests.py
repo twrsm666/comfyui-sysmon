@@ -224,8 +224,24 @@ def test_run_attribution() -> None:
         check("node 1 got samples in its window", by_id["1"].samples >= 1,
               str(by_id["1"].samples))
         check("node peaks non-empty", bool(by_id["2"].peaks), str(list(by_id["2"].peaks)))
-        check("vram peak recorded per node",
-              (by_id["2"].peaks.get("vram_used") or {}).get("value") is not None)
+        # Only assert VRAM when a GPU backend exists: on a GPU-less runner the
+        # sampler has no VRAM to report, so the metric is legitimately absent.
+        # CPU and RAM must always be present.
+        gpu_available = record.gpu_backend is not None
+        if gpu_available:
+            check("vram peak recorded per node",
+                  (by_id["2"].peaks.get("vram_used") or {}).get("value") is not None,
+                  str(by_id["2"].peaks.get("vram_used")))
+        else:
+            print("  (skipped: no GPU backend on this machine)")
+            check("peaks recorded even without a GPU",
+                  bool(by_id["2"].peaks), str(list(by_id["2"].peaks)))
+        check("cpu peak recorded per node",
+              (by_id["2"].peaks.get("cpu") or {}).get("value") is not None,
+              str(by_id["2"].peaks.get("cpu")))
+        check("ram peak recorded per node",
+              (by_id["2"].peaks.get("ram_used") or {}).get("value") is not None,
+              str(by_id["2"].peaks.get("ram_used")))
         check("per-node summary present", "cpu" in by_id["2"].summary)
 
         # Failure path
