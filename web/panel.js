@@ -1051,12 +1051,27 @@ export class SysmonPanel {
 
   renderSettings() {
     const body = this.body;
-    body.replaceChildren();
+
+    // The form is built once and then left alone.
+    //
+    // Rebuilding it on every poll cannot work: the focused element is destroyed
+    // and recreated once a second, so keystrokes that land between the teardown
+    // and the restore are lost and the caret escapes to <body>. Preserving
+    // values and re-focusing mitigates but does not fix that - it still
+    // corrupted typed text. A settings form is not live data, so the correct
+    // fix is to stop re-rendering it.
+    if (this.settingsRendered && body.querySelector(".sysmon-settings-form")) {
+      return;
+    }
+
     const config = this.config;
     if (!config) {
+      body.replaceChildren();
       body.appendChild(el("div", "sysmon-empty", "配置加载中…"));
       return;
     }
+    body.replaceChildren();
+    const formRoot = el("div", "sysmon-settings-form");
 
     // This tab is rebuilt on every poll, but the form holds text the user is
     // actively typing. Field values therefore live in this.settingsValues, are
@@ -1210,7 +1225,7 @@ export class SysmonPanel {
     });
     llmActions.appendChild(testBtn);
     section.appendChild(llmActions);
-    body.appendChild(section);
+    formRoot.appendChild(section);
 
     const sampling = el("div", "sysmon-section");
     sampling.appendChild(el("div", "sysmon-section-title", "采集与存储"));
@@ -1254,7 +1269,7 @@ export class SysmonPanel {
     });
     samplingActions.appendChild(saveSampling);
     sampling.appendChild(samplingActions);
-    body.appendChild(sampling);
+    formRoot.appendChild(sampling);
 
     const thresholds = el("div", "sysmon-section");
     thresholds.appendChild(el("div", "sysmon-section-title", "告警阈值 (%)"));
@@ -1289,7 +1304,7 @@ export class SysmonPanel {
     });
     thresholdActions.appendChild(saveThresholds);
     thresholds.appendChild(thresholdActions);
-    body.appendChild(thresholds);
+    formRoot.appendChild(thresholds);
 
     const info = el("div", "sysmon-section");
     info.appendChild(el("div", "sysmon-section-title", "状态"));
@@ -1307,8 +1322,10 @@ export class SysmonPanel {
     add("已采集样本", this.samplerStats?.samples);
     add("Python", this.samplerStats?.python);
     info.appendChild(grid);
-    body.appendChild(info);
+    formRoot.appendChild(info);
 
+    body.appendChild(formRoot);
+    this.settingsRendered = true;
     this.settingsForm = form;
     if (!this.settingsValues) {
       this.settingsValues = {};
