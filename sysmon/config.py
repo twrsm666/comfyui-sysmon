@@ -62,7 +62,10 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "crit_gpu_percent": 0.0,
 
     # --- LLM ---
-    "llm_enabled": False,
+    # On by default: supplying an API key is itself the consent decision.
+    # Defaulting to off silently gated the feature behind an opt-in the user
+    # had no reason to look for.
+    "llm_enabled": True,
     "llm_provider": "deepseek",
     "llm_base_url": "",
     "llm_api_key": "",

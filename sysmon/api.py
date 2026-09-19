@@ -171,6 +171,10 @@ class MonitorAPI:
                 # Never let the masked placeholder overwrite a stored key.
                 if patch.get("llm_api_key") in ("***", "", None) and "llm_api_key" in patch:
                     patch.pop("llm_api_key")
+                # A freshly supplied key implies intent to use the feature, so do
+                # not leave it disabled behind a flag that is easy to miss.
+                if patch.get("llm_api_key"):
+                    patch.setdefault("llm_enabled", True)
                 if "history_size" in patch:
                     try:
                         patch["history_size"] = max(60, min(int(patch["history_size"]), 20000))
@@ -190,7 +194,7 @@ class MonitorAPI:
         # --- AI analysis ------------------------------------------------
         def _llm_disabled_response(language: str):
             message = (
-                "AI 分析已被关闭。请在「设置」标签页勾选「启用 AI 分析」后重试。"
+                "AI 分析已被关闭。请在「设置」标签页中向下滚动，勾选「启用 AI 分析」后重试。"
                 if language != "en"
                 else 'AI analysis is disabled. Enable "AI analysis" in the settings tab.'
             )
