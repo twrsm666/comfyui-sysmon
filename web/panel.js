@@ -275,6 +275,11 @@ export class SysmonPanel {
     // AI-tab content lives in state and is re-rendered on every poll. Appending
     // it once would not survive, because renderAi() rebuilds the body.
     this.lastAnalysisError = null;
+    // Analysis results live in state and are re-rendered, never appended:
+    // every tab rebuilds on each poll, so an appended node disappears within a
+    // second. Reusing this.analysis for both scopes made an error analysis
+    // overwrite the run one.
+    this.analyses = {};
     this.aiPanel = null;
     this.aiChat = [];
     this.busy = false;
@@ -908,6 +913,13 @@ export class SysmonPanel {
     body.appendChild(section);
   }
 
+  /** Stable identity for an error, so its analysis can be looked up later. */
+  errorKey(error, run) {
+    const list = (run && run.errors) || [];
+    const index = list.indexOf(error);
+    return index >= 0 ? index : (error && error.t) || 0;
+  }
+
   errorBlock(error, run, expanded = false) {
     const box = el("div", "sysmon-error");
     box.appendChild(el("div", "sysmon-error-head",
@@ -954,6 +966,18 @@ export class SysmonPanel {
     });
     actions.appendChild(copyBtn);
     box.appendChild(actions);
+
+    // Rendered from state: this block is rebuilt on every poll, so a one-shot
+    // append would vanish before the user could read it.
+    const runId = run && run.prompt_id ? run.prompt_id : "unknown";
+    const key = runId + ":" + this.errorKey(error, run);
+    const entry = this.analyses[key];
+    if (entry) {
+      const wrap = el("div", "sysmon-ai");
+      wrap.appendChild(renderMarkdown(entry.text));
+      if (entry.meta) wrap.appendChild(el("div", "sysmon-ai-meta", entry.meta));
+      box.appendChild(wrap);
+    }
     return box;
   }
 
@@ -1002,7 +1026,15 @@ export class SysmonPanel {
     section.appendChild(box);
     body.appendChild(section);
 
-    if (latest.analysis?.text && !this.aiChat.some((turn) => turn.fromRun)) {
+    const latestKey = latest.prompt_id + ":run";
+    const storedRunAnalysis = this.analyses[latestKey];
+    if (storedRunAnalysis && !this.aiChat.some((turn) => turn.fromRun)) {
+      const wrap = el("div", "sysmon-ai");
+      wrap.appendChild(renderMarkdown(storedRunAnalysis.text));
+      if (storedRunAnalysis.meta) wrap.appendChild(el("div", "sysmon-ai-meta", storedRunAnalysis.meta));
+      box.appendChild(wrap);
+      this.aiChat.push({ fromRun: true, text: storedRunAnalysis.text, meta: storedRunAnalysis.meta });
+    } else if (latest.analysis?.text && !this.aiChat.some((turn) => turn.fromRun)) {
       const wrap = el("div", "sysmon-ai");
       wrap.appendChild(renderMarkdown(latest.analysis.text));
       wrap.appendChild(el("div", "sysmon-ai-meta", "模型：" + (latest.analysis.model || "-")));
@@ -1415,14 +1447,17 @@ export class SysmonPanel {
     if (analysis.usage?.total_tokens) metaParts.push(analysis.usage.total_tokens + " tokens");
     const meta = metaParts.filter(Boolean).join(" · ");
 
-    if (this.tab === "ai" || followUp) {
-      this.aiChat.push({ text: analysis.text, meta });
+    // Store, then re-render. Appending here would be wiped by the next poll.
+    const storeKey = error
+      ? run.prompt_id + ":" + this.errorKey(error, run)
+      : run.prompt_id + ":run";
+    this.analyses[storeKey] = { text: analysis.text, meta };
+
+    if (followUp || this.tab === "ai") {
+      if (!followUp) this.aiChat.push({ text: analysis.text, meta, fromRun: false });
       if (this.tab === "ai") this.renderAi();
     } else {
-      const wrap = el("div", "sysmon-ai");
-      wrap.appendChild(renderMarkdown(analysis.text));
-      wrap.appendChild(el("div", "sysmon-ai-meta", meta));
-      (container || this.body).appendChild(wrap);
+      this.render();
     }
     toast("AI 分析完成", "success");
   }
