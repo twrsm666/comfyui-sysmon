@@ -561,14 +561,20 @@ export class SysmonPanel {
     const chartSection = el("div", "sysmon-section");
     chartSection.appendChild(el("div", "sysmon-section-title", "历史曲线"));
     const wrapper = el("div", "sysmon-chart-wrap");
-    const canvas = document.createElement("canvas");
-    wrapper.appendChild(canvas);
+    // The canvas element is created once and reused. This tab rebuilds its DOM
+    // on every poll, and MetricChart holds a reference to one canvas: creating a
+    // fresh element each time left the chart drawing into a detached node, so
+    // the visible canvas stayed blank.
+    if (!this.chartCanvas) {
+      this.chartCanvas = document.createElement("canvas");
+    }
+    wrapper.appendChild(this.chartCanvas);
     chartSection.appendChild(wrapper);
     body.appendChild(chartSection);
 
     if (!this.liveChart) {
       this.liveChart = new MetricChart(
-        canvas,
+        this.chartCanvas,
         [
           { key: "gpu_util", label: "GPU", path: ["gpu", "util_percent"], unit: "%", color: "#3b82f6", max: 100, fill: true },
           { key: "cpu", label: "CPU", path: ["cpu_percent"], unit: "%", color: "#f59e0b", max: 100 },

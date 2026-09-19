@@ -197,6 +197,32 @@ for (const file of files) {
     check(`${file} show() hides the launcher`, /launcher/.test(showFn[1]) && /remove\(/.test(showFn[1]),
       showFn[1].trim().slice(0, 80));
   }
+
+  // 6. The chart canvas must outlive a re-render.
+  //    This tab rebuilds its DOM on every poll via replaceChildren(). Creating
+  //    the canvas fresh each time left MetricChart drawing into a detached node,
+  //    so the visible canvas was never painted: the history curve was blank and
+  //    no exception was ever raised. The canvas therefore has to live in
+  //    instance state and be re-appended rather than re-created.
+  if (/sysmon-chart-wrap/.test(source)) {
+    check(
+      `${file} chart canvas is cached on the instance`,
+      /this\.chartCanvas/.test(source),
+      "canvas looks like it is created per render; the chart would draw into a detached node",
+    );
+    // The chart DOM is built in the first part of renderLive(); take a window
+    // from the method start rather than trying to balance nested method braces.
+    const start = source.indexOf("renderLive(");
+    if (start >= 0) {
+      const window2100 = source.slice(start, start + 2100);
+      const chartPart = window2100.slice(0, window2100.indexOf("MetricChart") + 120);
+      check(
+        `${file} renderLive does not create a fresh canvas`,
+        !/createElement\(\s*["']canvas["']\s*\)/.test(chartPart),
+        "renderLive creates a canvas, which detaches the one the chart holds",
+      );
+    }
+  }
 }
 
 /**
