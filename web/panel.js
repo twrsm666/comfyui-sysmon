@@ -1058,6 +1058,61 @@ export class SysmonPanel {
       return;
     }
 
+    // This tab is rebuilt on every poll, but the form holds text the user is
+    // actively typing. Field values therefore live in this.settingsValues, are
+    // written on input events, and are re-applied after each re-render -
+    // otherwise the rebuilt nodes come back blank and the caret is lost once a
+    // second, which reads as "the input boxes do not accept typing".
+    // Two separate objects on purpose: `form` maps field -> element for the
+    // current DOM (rebuilt every poll), while settingsValues is the durable
+    // value store. Conflating them loses every keystroke on re-render.
+    const savedValues = this.settingsValues || {};
+    const savedFocus = this.settingsFocus || null;
+    const isFirstBuild = !this.settingsValues;
+    const form = {};
+
+    const bindInput = (input, key, initial) => {
+      input.dataset.field = key;
+      input.value = isFirstBuild ? (initial ?? "") : (savedValues[key] ?? "");
+      input.addEventListener("input", () => { this.settingsValues[key] = input.value; });
+      input.addEventListener("focus", () => { this.settingsFocus = key; });
+      input.addEventListener("blur", () => {
+        if (this.settingsFocus === key) this.settingsFocus = null;
+      });
+      form[key] = input;
+      return input;
+    };
+
+    const bindSelect = (select, key, initial) => {
+      select.dataset.field = key;
+      select.value = isFirstBuild ? initial : (savedValues[key] ?? initial);
+      select.addEventListener("change", () => { this.settingsValues[key] = select.value; });
+      form[key] = select;
+      return select;
+    };
+
+    const bindCheckbox = (input, key, initial) => {
+      input.dataset.field = key;
+      input.checked = isFirstBuild ? Boolean(initial) : Boolean(savedValues[key]);
+      input.addEventListener("change", () => { this.settingsValues[key] = input.checked; });
+      form[key] = input;
+      return input;
+    };
+
+    /** Current values as shown in the form, for saving or testing. */
+    const readLlm = () => {
+      const patch = {
+        llm_provider: form.llm_provider.value,
+        llm_base_url: form.llm_base_url.value.trim(),
+        llm_model: form.llm_model.value.trim(),
+        llm_language: form.llm_language.value,
+        llm_enabled: form.llm_enabled.checked,
+      };
+      const typed = form.llm_api_key.value.trim();
+      if (typed) patch.llm_api_key = typed;
+      return patch;
+    };
+
     const section = el("div", "sysmon-section");
     section.appendChild(el("div", "sysmon-section-title", "在线大模型"));
 
@@ -1068,9 +1123,9 @@ export class SysmonPanel {
       const option = document.createElement("option");
       option.value = key;
       option.textContent = preset.label || key;
-      if (config.llm_provider === key) option.selected = true;
       providerSelect.appendChild(option);
     }
+    bindSelect(providerSelect, "llm_provider", config.llm_provider || "deepseek");
     providerField.appendChild(providerSelect);
     section.appendChild(providerField);
 
@@ -1079,6 +1134,8 @@ export class SysmonPanel {
     const keyInput = document.createElement("input");
     keyInput.type = "password";
     keyInput.placeholder = config.llm_api_key_set ? "已保存（留空则不修改）" : "sk-...";
+    // Never seed this from config: the server only ever sends a masked value.
+    bindInput(keyInput, "llm_api_key", "");
     keyField.appendChild(keyInput);
     keyField.appendChild(el("div", "sysmon-hint",
       "Key 只保存在本地 sysmon_config.json，不会发送到除你配置的服务商以外的任何地方。"));
@@ -1088,8 +1145,8 @@ export class SysmonPanel {
     baseField.appendChild(el("label", null, "Base URL（留空使用默认）"));
     const baseInput = document.createElement("input");
     baseInput.type = "text";
-    baseInput.value = config.llm_base_url || "";
     baseInput.placeholder = "https://api.deepseek.com";
+    bindInput(baseInput, "llm_base_url", config.llm_base_url || "");
     baseField.appendChild(baseInput);
     section.appendChild(baseField);
 
@@ -1097,8 +1154,8 @@ export class SysmonPanel {
     modelField.appendChild(el("label", null, "模型名（留空使用默认）"));
     const modelInput = document.createElement("input");
     modelInput.type = "text";
-    modelInput.value = config.llm_model || "";
     modelInput.placeholder = "deepseek-chat";
+    bindInput(modelInput, "llm_model", config.llm_model || "");
     modelField.appendChild(modelInput);
     section.appendChild(modelField);
 
@@ -1109,13 +1166,14 @@ export class SysmonPanel {
       const option = document.createElement("option");
       option.value = value;
       option.textContent = label;
-      if ((config.llm_language || "zh") === value) option.selected = true;
       langSelect.appendChild(option);
     }
+    bindSelect(langSelect, "llm_language", config.llm_language || "zh");
     langField.appendChild(langSelect);
     section.appendChild(langField);
 
     const llmToggle = checkRow("启用 AI 分析", config.llm_enabled);
+    bindCheckbox(llmToggle.input, "llm_enabled", config.llm_enabled);
     section.appendChild(llmToggle.row);
 
     this.settingsToast = el("div");
@@ -1124,21 +1182,20 @@ export class SysmonPanel {
     const llmActions = el("div", "sysmon-actions");
     const llmSaveBtn = el("button", "sysmon-btn is-primary", "保存");
     llmSaveBtn.addEventListener("click", async () => {
-      const patch = {
-        llm_provider: providerSelect.value,
-        llm_base_url: baseInput.value.trim(),
-        llm_model: modelInput.value.trim(),
-        llm_language: langSelect.value,
-        llm_enabled: llmToggle.input.checked,
-      };
-      if (keyInput.value.trim()) patch.llm_api_key = keyInput.value.trim();
-      await this.saveConfig(patch, llmSaveBtn);
-      keyInput.value = "";
+      await this.saveConfig(readLlm(), llmSaveBtn);
+      // Drop the key from both the field and the persisted form state so a later
+      // re-render cannot bring it back and it is not kept in memory.
+      form.llm_api_key.value = "";
+      this.settingsValues.llm_api_key = "";
     });
     llmActions.appendChild(llmSaveBtn);
 
     const testBtn = el("button", "sysmon-btn", "测试连接");
     testBtn.addEventListener("click", async () => {
+      // Honour unsaved edits: push the visible form state before testing.
+      const saved = await request("/config", { method: "POST", body: readLlm() });
+      if (saved.data?.ok) this.config = saved.data.config;
+
       testBtn.disabled = true;
       testBtn.textContent = "测试中…";
       const result = await request("/test_llm", { method: "POST" });
@@ -1157,25 +1214,42 @@ export class SysmonPanel {
 
     const sampling = el("div", "sysmon-section");
     sampling.appendChild(el("div", "sysmon-section-title", "采集与存储"));
-    sampling.appendChild(this.numberField("采样间隔 (ms)", config.sample_interval_ms, "sample_interval_ms", 200, 60000));
-    sampling.appendChild(this.numberField("运行时采样间隔 (ms)", config.sample_interval_active_ms, "sample_interval_active_ms", 100, 60000));
-    sampling.appendChild(this.numberField("历史样本数", config.history_size, "history_size", 60, 20000));
-    sampling.appendChild(this.numberField("保留运行数（内存）", config.history_runs, "history_runs", 1, 200));
-    sampling.appendChild(this.numberField("最多保存日志文件", config.max_saved_runs, "max_saved_runs", 1, 5000));
+    const numericFields = [
+      ["采样间隔 (ms)", "sample_interval_ms", config.sample_interval_ms, 200, 60000],
+      ["运行时采样间隔 (ms)", "sample_interval_active_ms", config.sample_interval_active_ms, 100, 60000],
+      ["历史样本数", "history_size", config.history_size, 60, 20000],
+      ["保留运行数（内存）", "history_runs", config.history_runs, 1, 200],
+      ["最多保存日志文件", "max_saved_runs", config.max_saved_runs, 1, 5000],
+    ];
+    const numericInputs = [];
+    for (const [label, key, value, min, max] of numericFields) {
+      const field = el("div", "sysmon-field");
+      field.appendChild(el("label", null, label));
+      const input = document.createElement("input");
+      input.type = "number";
+      input.min = String(min);
+      input.max = String(max);
+      bindInput(input, key, value);
+      field.appendChild(input);
+      sampling.appendChild(field);
+      numericInputs.push(input);
+    }
     const saveRuns = checkRow("保存每次运行到 logs/ 目录", config.save_runs);
+    bindCheckbox(saveRuns.input, "save_runs", config.save_runs);
     sampling.appendChild(saveRuns.row);
     const saveArtifacts = checkRow("报错时额外保存详细快照", config.save_error_artifacts);
+    bindCheckbox(saveArtifacts.input, "save_error_artifacts", config.save_error_artifacts);
     sampling.appendChild(saveArtifacts.row);
     const samplingActions = el("div", "sysmon-actions");
     const saveSampling = el("button", "sysmon-btn is-primary", "保存采集设置");
     saveSampling.addEventListener("click", async () => {
       const patch = {};
-      for (const input of sampling.querySelectorAll("input[data-key]")) {
+      for (const input of numericInputs) {
         const value = Number(input.value);
-        if (Number.isFinite(value)) patch[input.dataset.key] = value;
+        if (Number.isFinite(value)) patch[input.dataset.field] = value;
       }
-      patch.save_runs = saveRuns.input.checked;
-      patch.save_error_artifacts = saveArtifacts.input.checked;
+      patch.save_runs = form.save_runs.checked;
+      patch.save_error_artifacts = form.save_error_artifacts.checked;
       await this.saveConfig(patch, saveSampling);
     });
     samplingActions.appendChild(saveSampling);
@@ -1184,17 +1258,32 @@ export class SysmonPanel {
 
     const thresholds = el("div", "sysmon-section");
     thresholds.appendChild(el("div", "sysmon-section-title", "告警阈值 (%)"));
-    thresholds.appendChild(this.numberField("显存警告", config.warn_vram_percent, "warn_vram_percent", 1, 100));
-    thresholds.appendChild(this.numberField("显存严重", config.crit_vram_percent, "crit_vram_percent", 1, 100));
-    thresholds.appendChild(this.numberField("内存警告", config.warn_ram_percent, "warn_ram_percent", 1, 100));
-    thresholds.appendChild(this.numberField("内存严重", config.crit_ram_percent, "crit_ram_percent", 1, 100));
+    const thresholdInputs = [];
+    const thresholdFields = [
+      ["显存警告", "warn_vram_percent", config.warn_vram_percent],
+      ["显存严重", "crit_vram_percent", config.crit_vram_percent],
+      ["内存警告", "warn_ram_percent", config.warn_ram_percent],
+      ["内存严重", "crit_ram_percent", config.crit_ram_percent],
+    ];
+    for (const [label, key, value] of thresholdFields) {
+      const field = el("div", "sysmon-field");
+      field.appendChild(el("label", null, label));
+      const input = document.createElement("input");
+      input.type = "number";
+      input.min = "1";
+      input.max = "100";
+      bindInput(input, key, value);
+      field.appendChild(input);
+      thresholds.appendChild(field);
+      thresholdInputs.push(input);
+    }
     const thresholdActions = el("div", "sysmon-actions");
     const saveThresholds = el("button", "sysmon-btn", "保存阈值");
     saveThresholds.addEventListener("click", async () => {
       const patch = {};
-      for (const input of thresholds.querySelectorAll("input[data-key]")) {
+      for (const input of thresholdInputs) {
         const value = Number(input.value);
-        if (Number.isFinite(value)) patch[input.dataset.key] = value;
+        if (Number.isFinite(value)) patch[input.dataset.field] = value;
       }
       await this.saveConfig(patch, saveThresholds);
     });
@@ -1219,6 +1308,22 @@ export class SysmonPanel {
     add("Python", this.samplerStats?.python);
     info.appendChild(grid);
     body.appendChild(info);
+
+    this.settingsForm = form;
+    if (!this.settingsValues) {
+      this.settingsValues = {};
+      for (const [key, node] of Object.entries(form)) {
+        this.settingsValues[key] = node.type === "checkbox" ? node.checked : node.value;
+      }
+    }
+    // Put the caret back where it was, so typing is not interrupted every poll.
+    if (savedFocus && form[savedFocus]) {
+      try {
+        form[savedFocus].focus();
+      } catch (err) {
+        /* focus is best-effort */
+      }
+    }
   }
 
   numberField(label, value, key, min, max) {
